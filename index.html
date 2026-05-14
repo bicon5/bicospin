@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Колесо Фортуны Bicospin</title>
+    <style>
+        /* === Анимированный фон === */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: #fff;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* === МЕНЮ ПОБЕДИТЕЛЯ === */
+        #winner-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease;
+        }
+        .winner-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #23d5ab;
+            transform: scale(0);
+            animation: popUp 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards;
+            box-shadow: 0 0 50px rgba(35, 213, 171, 0.5);
+            margin: 20px;
+        }
+        #winner-text {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #fff;
+            text-shadow: 0 0 20px #23d5ab, 0 0 40px #23d5ab;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popUp { to { transform: scale(1); } }
+
+        /* === Модальное окно конфиденциальности === */
+        #privacy-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            margin: 20px;
+        }
+        .modal-content a { color: #23d5ab; }
+        
+        .container {
+            display: flex;
+            gap: 50px;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            max-width: 900px;
+            width: 90%;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 250px;
+        }
+
+        .custom-text {
+            font-size: 14px;
+            color: #e0e0e0;
+            margin: 0 0 5px 0;
+            line-height: 1.4;
+        }
+        
+        input[type="text"] {
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            width: 100%;
+        }
+        .btn-add {
+            background: #23d5ab;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(35, 213, 171, 0.4);
+        }
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ff4d4d;
+            border: 1px solid #ff4d4d;
+            font-size: 12px;
+            padding: 8px;
+        }
+        .btn-spin {
+            background: #e73c7e;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(231, 60, 126, 0.4);
+            margin-top: 10px;
+        }
+        button:hover { transform: translateY(-3px) scale(1.02); }
+
+        .right-panel {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            border: 5px solid rgba(255,255,255,0.3);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.1, 1);
+        }
+
+        canvas { width: 100%; height: 100%; display: block; }
+
+        .pointer {
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 20px solid transparent;
+            border-bottom: 20px solid transparent;
+            border-right: 40px solid #fff;
+            z-index: 10;
+        }
+
+        .counter { font-size: 12px; color: #ccc; text-align: center; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; padding: 30px 20px; }
+            .left-panel { width: 100%; max-width: 320px; }
+            .wheel-container { width: 300px; height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="winner-modal">
+        <div class="winner-content">
+            <h1>🎉 ПОБЕДА 🎉</h1>
+            <div id="winner-text">СЛОВО</div>
+            <button class="btn-add" onclick="closeWinner()">Круто!</button>
+        </div>
+    </div>
+
+    <div id="privacy-modal">
+        <div class="modal-content">
+            <h2>Добро пожаловать!</h2>
+            <p>Используя этот сайт, вы принимаете <br>
+                <a href="https://policies.google.com/privacy?hl=ru" target="_blank">Политику конфиденциальности Google</a>.
+            </p>
+            <button class="btn-add" onclick="acceptPrivacy()">Принимаю</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-panel">
+            <h2>Колесо фортуны</h2>
+            <p class="custom-text"><strong>Внимание:</strong> Данный сервис является инструментом для случайного выбора и предназначен исключительно для развлекательных целей. Владелец сайта не несет ответственности за содержание слов, добавленных пользователями, а также за любые последствия, решения или действия, принятые на основании результатов вращения колеса. Использование сомнительных, оскорбительных или недопустимых выражений остается на совести пользователя.</p>
+            <input type="text" id="wordInput" placeholder="Введите слово..." onkeypress="handleKeyPress(event)">
+            <button class="btn-add" onclick="addWord()">Добавить</button>
+            <button class="btn-clear" onclick="clearWords()">Очистить всё</button>
+            <div class="counter" id="wordCount">Слов: 0 / 100</div>
+            <button class="btn-spin" onclick="spinWheel()">Крутить!</button>
+        </div>
+
+        <div class="right-panel">
+            <div class="pointer"></div>
+            <div class="wheel-container" id="wheel">
+                <canvas id="canvas" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка слов из памяти при старте
+        let segments = JSON.parse(localStorage.getItem('bico_words')) || [];
+        const maxSegments = 100;
+        let currentRotation = 0;
+        let isSpinning = false;
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const wheelElement = document.getElementById('wheel');
+        const inputElement = document.getElementById('wordInput');
+        const countElement = document.getElementById('wordCount');
+
+        function acceptPrivacy() { document.getElementById('privacy-modal').style.display = 'none'; }
+
+        function getRandomColor() {
+            const h = Math.floor(Math.random() * 360);
+            return `hsl(${h}, 70%, 60%)`;
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') addWord(); }
+
+        // Сохранение в память
+        function saveToStorage() {
+            localStorage.setItem('bico_words', JSON.stringify(segments));
+        }
+
+        function addWord() {
+            const text = inputElement.value.trim();
+            if (!text || segments.length >= maxSegments) return;
+            segments.push({ text, color: getRandomColor() });
+            inputElement.value = '';
+            updateUI();
+            saveToStorage();
+        }
+
+        // Новая функция очистки
+        function clearWords() {
+            if(confirm("Удалить все слова?")) {
+                segments = [];
+                updateUI();
+                saveToStorage();
+                wheelElement.style.transform = `rotate(0deg)`;
+                currentRotation = 0;
+            }
+        }
+
+        function updateUI() {
+            countElement.innerText = `Слов: ${segments.length} / 100`;
+            drawWheel();
+        }
+
+        function drawWheel() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = centerX;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (segments.length === 0) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fill();
+                return;
+            }
+
+            const arcAngle = (2 * Math.PI) / segments.length;
+            for (let i = 0; i < segments.length; i++) {
+                const angle = i * arcAngle;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arcAngle);
+                ctx.fillStyle = segments[i].color;
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.2)";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                let textAngle = angle + arcAngle / 2;
+                textAngle = textAngle % (2 * Math.PI);
+
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 18px sans-serif";
+                ctx.shadowColor = "rgba(0,0,0,0.8)";
+                ctx.shadowBlur = 6;
+
+                if (textAngle > Math.PI / 2 && textAngle < 3 * Math.PI / 2) {
+                    ctx.rotate(textAngle + Math.PI);
+                    ctx.textAlign = "left";
+                    ctx.fillText(segments[i].text, -radius + 30, 7);
+                } else {
+                    ctx.rotate(textAngle);
+                    ctx.textAlign = "right";
+                    ctx.fillText(segments[i].text, radius - 30, 7);
+                }
+                ctx.restore();
+            }
+        }
+
+        function spinWheel() {
+            if (segments.length === 0 || isSpinning) return;
+            isSpinning = true;
+            const randomSpins = Math.floor(Math.random() * 5) + 5;
+            const randomAngle = Math.floor(Math.random() * 360);
+            currentRotation += (randomSpins * 360) + randomAngle;
+            wheelElement.style.transform = `rotate(${currentRotation}deg)`;
+        }
+
+        wheelElement.addEventListener('transitionend', () => {
+            isSpinning = false;
+            const actualRotation = currentRotation % 360;
+            const segmentAngle = 360 / segments.length;
+            const winningIndex = Math.floor(((360 - actualRotation) % 360) / segmentAngle);
+            const winner = segments[winningIndex].text;
+            showWinner(winner);
+        });
+
+        function showWinner(name) {
+            document.getElementById('winner-text').innerText = name;
+            document.getElementById('winner-modal').style.display = 'flex';
+        }
+
+        function closeWinner() { document.getElementById('winner-modal').style.display = 'none'; }
+
+        // Первичная отрисовка при загрузке
+        updateUI();
+    </script>
+</body>
+</html>
